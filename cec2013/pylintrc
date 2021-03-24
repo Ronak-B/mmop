@@ -1,0 +1,9 @@
+[BASIC]
+
+# Good variable names which should always be accepted, separated by a comma.
+argument-rgx=[a-z0-9_]{1,30}$
+attr-rgx=[a-zA-Z0-9_]{1,30}$
+variable-rgx=[a-z0-9_]{1,30}$
+good-names=ex,
+           Run,
+           _
