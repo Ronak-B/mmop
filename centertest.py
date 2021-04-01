@@ -16,7 +16,8 @@ def circumradius(S,center):
     return np.sum(((S-center)**2))**.5
 
 for i in tri.simplices:
-    print(points[i])
-    c=circumcenter(points[i],2)
-    print(c)
-    print(circumradius(points[i],c))
+    print(i)
+    # print(points[i])
+    # c=circumcenter(points[i],2)
+    # print(c)
+    # print(circumradius(points[i],c))

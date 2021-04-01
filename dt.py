@@ -23,18 +23,13 @@ import random
 # shared.MaxFes = f.get_maxfes()
 # ub, lb = get_bounds(f)
 
-def random_unit_vector(dim):
-    v = np.random.rand(1,dim)
-    mag = np.linalg.norm(v)
-    return v/mag
-
-def goodness(s, p):
-    def avg_fitness(s):
-        return sum(i.fitness for i in s)/len(s)
-    bias = 2**0.5  # TODO good BIAS VALUE?
-    f = avg_fitness(s)
-    f += bias * np.sqrt(np.log(p/len(s)))
-    return f
+# def goodness(s, p):
+#     def avg_fitness(s):
+#         return sum(i.fitness for i in s)/len(s)
+#     bias = 2**0.5  # TODO good BIAS VALUE?
+#     f = avg_fitness(s)
+#     f += bias * np.sqrt(np.log(p/len(s)))
+#     return f
 
 
 def select_best(specie):
@@ -219,6 +214,11 @@ class circumcircle:
         self.volume=None
         self.fitness= 0 # Average fitness of the population
 
+def random_unit_vector(dim):
+    v = np.random.rand(1,dim)
+    mag = np.linalg.norm(v)
+    return v/mag
+
 def effective_volume(HS,population,dim):
     c=HS.center
     r=HS.radius
@@ -243,7 +243,7 @@ def effective_volume(HS,population,dim):
 
 
 def explorative_generation(population,dim,n):
-    #calculate delaunay traingulation
+    #calculate delaunay triangulation
     pop=[i.val for i in population]
     D=Delaunay(pop)
     #print(D.points[D.simplices])
@@ -258,15 +258,15 @@ def explorative_generation(population,dim,n):
     #estimate volume
     for c in circumcircles:
         effective_volume(c,population,dim)
-        print(c.volume)
+        # print(c.volume)
 
     # choose the circumcircles using volumes of circumcircles
     index = list(range(0, len(circumcircles)))
-    selected_circumcentres = random.choices(index, weights = [c.volume for c in circumcircles], k = n)
+    selected_circumcircles = random.choices(index, weights = [c.volume for c in circumcircles], k = n)
 
     # generate new individual
     new_points = []
-    for i in selected_circumcentres:
+    for i in selected_circumcircles:
         C = circumcircles[i].center
         R = circumcircles[i].radius
         noise = np.random.normal(0, R/3)
@@ -276,34 +276,45 @@ def explorative_generation(population,dim,n):
 
     # return new_points
 
-def exploitive_generation(population, dim, n):
+def average_fitness(population, index):
+    fitness = [population[i].fitness for i in index]
+    return np.mean(fitness)
+
+def exploitative_generation(population, dim, n):
+    # Delaunay triangulation
     pop=[i.val for i in population]
-    D=Delaunay(pop)
+    D = Delaunay(pop)
     circumcircles=[]
 
     for i in D.simplices:
         temp=circumcircle()
         temp.center=circumcenter(D.points[i],dim)
         temp.radius=circumradius(D.points[i],temp.center)
+        temp.fitness = average_fitness(population, i)
         circumcircles.append(temp)
 
     #estimate volume
+    total_volume = 0
     for c in circumcircles:
         effective_volume(c,population,dim)
-        print(c.volume)
+        # print(c.volume)
+        total_volume = total_volume + c.volume
 
-    # calculate average fitness
-
-    # goodness measure
-    # UCB
+    # goodness measure- UCB
+    goodness_measure = []
+    k = 1 # trade-off constant
+    for c in circumcircles:
+        ucb = c.fitness + k * np.sqrt(2* np.log(c.volume/total_volume))
+        goodness_measure.append(ucb)
 
     # choose the circumcircle using goodness measure
+    selected_circumcircle = np.argmax(goodness_measure)
 
     # generate new individual
     new_points = []
-    for i in selected_circumcentres:
-        C = circumcircles[i].center
-        R = circumcircles[i].radius
+    C = circumcircles[selected_circumcircle].center
+    R = circumcircles[selected_circumcircle].radius
+    for _ in range(n):
         noise = np.random.normal(0, R/3) # change to lower deviation
         ru = random_unit_vector(dim) # vector can be from centre to high-fitness individual
         If = C + (ru * noise)
