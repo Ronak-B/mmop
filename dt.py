@@ -14,6 +14,7 @@ from nbc import NBC_minsize
 from mutations import rand1, rand2, keypoint1, keypoint2
 from utils import get_bounds,  TerminationCondition, uniform_rand_init, Agent, crossover, judge, save, load
 from scipy.spatial import Delaunay
+import random
 # k = 4
 # f = CEC2013(k)
 # print(f.get_info())
@@ -22,6 +23,10 @@ from scipy.spatial import Delaunay
 # shared.MaxFes = f.get_maxfes()
 # ub, lb = get_bounds(f)
 
+def random_unit_vector(dim):
+    v = np.random.rand(1,dim)
+    mag = np.linalg.norm(v)
+    return v/mag
 
 def goodness(s, p):
     def avg_fitness(s):
@@ -212,7 +217,7 @@ class circumcircle:
         self.center=None
         self.radius=None
         self.volume=None
-        self.fitness=None
+        self.fitness= 0 # Average fitness of the population
 
 def effective_volume(HS,population,dim):
     c=HS.center
@@ -254,6 +259,57 @@ def explorative_generation(population,dim,n):
     for c in circumcircles:
         effective_volume(c,population,dim)
         print(c.volume)
+
+    # choose the circumcircles using volumes of circumcircles
+    index = list(range(0, len(circumcircles)))
+    selected_circumcentres = random.choices(index, weights = [c.volume for c in circumcircles], k = n)
+
+    # generate new individual
+    new_points = []
+    for i in selected_circumcentres:
+        C = circumcircles[i].center
+        R = circumcircles[i].radius
+        noise = np.random.normal(0, R/3)
+        ru = random_unit_vector(dim)
+        If = C + (ru * noise)
+        new_points.append(If)
+
+    # return new_points
+
+def exploitive_generation(population, dim, n):
+    pop=[i.val for i in population]
+    D=Delaunay(pop)
+    circumcircles=[]
+
+    for i in D.simplices:
+        temp=circumcircle()
+        temp.center=circumcenter(D.points[i],dim)
+        temp.radius=circumradius(D.points[i],temp.center)
+        circumcircles.append(temp)
+
+    #estimate volume
+    for c in circumcircles:
+        effective_volume(c,population,dim)
+        print(c.volume)
+
+    # calculate average fitness
+
+    # goodness measure
+    # UCB
+
+    # choose the circumcircle using goodness measure
+
+    # generate new individual
+    new_points = []
+    for i in selected_circumcentres:
+        C = circumcircles[i].center
+        R = circumcircles[i].radius
+        noise = np.random.normal(0, R/3) # change to lower deviation
+        ru = random_unit_vector(dim) # vector can be from centre to high-fitness individual
+        If = C + (ru * noise)
+        new_points.append(If)
+
+    # return new_points
 
 def circumcenter(S,d):
     A=np.insert(S*2,d,1,axis=1)
