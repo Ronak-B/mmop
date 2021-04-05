@@ -242,9 +242,11 @@ def effective_volume(HS,population,dim):
     HS.volume=effective_vol
 
 
-def explorative_generation(population,dim,n):
+def explorative_generation(population,dim,n,func):
     #calculate delaunay triangulation
     pop=[i.val for i in population]
+    #for i in pop:
+        #print(i)
     D=Delaunay(pop)
     #print(D.points[D.simplices])
     circumcircles=[]
@@ -263,24 +265,31 @@ def explorative_generation(population,dim,n):
     # choose the circumcircles using volumes of circumcircles
     index = list(range(0, len(circumcircles)))
     selected_circumcircles = random.choices(index, weights = [c.volume for c in circumcircles], k = n)
-
+    #print(len(selected_circumcircles))
+    #print(n)
     # generate new individual
     new_points = []
     for i in selected_circumcircles:
         C = circumcircles[i].center
         R = circumcircles[i].radius
+        #print(C)
         noise = np.random.normal(0, R/3)
         ru = random_unit_vector(dim)
+        #print(ru*noise)
         If = C + (ru * noise)
-        new_points.append(If)
-
-    # return new_points
+        If=If[0]
+        ub,lb=get_bounds(func)
+        If=np.maximum(If,lb)
+        If=np.minimum(If,ub)
+        #print(If)
+        new_points.append(Agent(If,func))
+    return new_points
 
 def average_fitness(population, index):
     fitness = [population[i].fitness for i in index]
     return np.mean(fitness)
 
-def exploitative_generation(population, dim, n):
+def exploitative_generation(population, dim, n,func):
     # Delaunay triangulation
     pop=[i.val for i in population]
     D = Delaunay(pop)
@@ -318,9 +327,15 @@ def exploitative_generation(population, dim, n):
         noise = np.random.normal(0, R/3) # change to lower deviation
         ru = random_unit_vector(dim) # vector can be from centre to high-fitness individual
         If = C + (ru * noise)
-        new_points.append(If)
+        If=If[0]
+        ub,lb=get_bounds(func)
+        If=np.maximum(If,lb)
+        If=np.minimum(If,ub)
+        #print(If)
+        new_points.append(Agent(If,func))
 
-    # return new_points
+    #print(new_points)
+    return new_points
 
 def circumcenter(S,d):
     A=np.insert(S*2,d,1,axis=1)
@@ -334,7 +349,7 @@ def circumradius(S,center):
     return np.sum(((S-center)**2))**.5
 
 
-def solve(f, lb, ub, dim, temp=-1, num_clusters=-1, T=20, M_factor=0, gen_mult=1, generate_strategy=generate_old):  # ,pop_hint=-1
+def solve(f, lb, ub, dim, temp=-1, num_clusters=-1, T=20, M_factor=0, gen_mult=1.5, generate_strategy=generate_old):  # ,pop_hint=-1
     CR = 0.9  # MAGIC
     MaxGens = (200 if dim < 5 else 300)*gen_mult
 
@@ -397,9 +412,14 @@ def solve(f, lb, ub, dim, temp=-1, num_clusters=-1, T=20, M_factor=0, gen_mult=1
                         genz.append(w)
 
                     else:
-                        ws = generate_strategy(s, n-len(s))
-                        explorative_generation(population,dim,n-len(s))
+                        #ws = generate_strategy(s, n-len(s))
+                        #print(n-len(s))
+                        ws = explorative_generation(population,dim,n-len(s),f)
+                        for i in ws:
+                            print(i.val)
+                            print(i.fitness)
                         genz.extend(ws)
+                
                         break
 
             population = genz
@@ -586,7 +606,7 @@ if __name__ == "__main__":
 
     else:
 
-        k = 4
+        k = 10
         f = CEC2013(k)
         print(f.get_info())
         dim = f.get_dimension()
