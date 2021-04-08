@@ -328,6 +328,8 @@ def exploitative_generation(population, dim, n,func):
         ru = random_unit_vector(dim) # vector can be from centre to high-fitness individual
         If = C + (ru * noise)
         If=If[0]
+
+        # bounds -> domain boundaries
         ub,lb=get_bounds(func)
         If=np.maximum(If,lb)
         If=np.minimum(If,ub)
@@ -347,6 +349,17 @@ def circumcenter(S,d):
 
 def circumradius(S,center):
     return np.sum(((S-center)**2))**.5
+
+def generate_DT(s, dim, n, func):
+    alpha = 0.5
+    per = 1 - (shared.i / shared.MaxFes)**alpha # TODO: anychanges to function?
+    R = np.random.uniform()
+
+    if R < per: 
+        return explorative_generation(s, dim, n, func) # Exploration
+    else:
+        return exploitative_generation(s, dim, n, func) # Exploitation
+
 
 
 def solve(f, lb, ub, dim, temp=-1, num_clusters=-1, T=20, M_factor=0, gen_mult=1.5, generate_strategy=generate_old):  # ,pop_hint=-1
@@ -414,7 +427,7 @@ def solve(f, lb, ub, dim, temp=-1, num_clusters=-1, T=20, M_factor=0, gen_mult=1
                     else:
                         #ws = generate_strategy(s, n-len(s))
                         #print(n-len(s))
-                        ws = explorative_generation(population,dim,n-len(s),f)
+                        ws = generate_DT(population,dim,n-len(s),f)
                         for i in ws:
                             print(i.val)
                             print(i.fitness)
