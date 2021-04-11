@@ -219,20 +219,19 @@ def random_unit_vector(dim):
     mag = np.linalg.norm(v)
     return v/mag
 
-def effective_volume(HS,population,dim):
+def effective_volume(HS,population,dim,ub,lb):
     c=HS.center
     r=HS.radius
     c_max=c+r
     c_min=c-r
     effective_vol=1
-
-    X_max=np.full(dim,-math.inf)
-    X_min=np.full(dim,math.inf)
-    for i in population:
-        temp=i.val
-        for d in range(dim):
-            X_max[d]=max(X_max[d],temp[d])
-            X_min[d]=min(X_min[d],temp[d])
+    X_max=ub
+    X_min=lb
+    # for i in population:
+    #     temp=i.val
+    #     for d in range(dim):
+    #         X_max[d]=max(X_max[d],temp[d])
+    #         X_min[d]=min(X_min[d],temp[d])
     
     for i in range(dim):
         L_max=min(c_max[i],X_max[i])
@@ -242,7 +241,7 @@ def effective_volume(HS,population,dim):
     HS.volume=effective_vol
 
 
-def explorative_generation(population,dim,n,func):
+def explorative_generation(population,dim,n,func,ub,lb):
     #calculate delaunay triangulation
     pop=[i.val for i in population]
     #for i in pop:
@@ -259,7 +258,7 @@ def explorative_generation(population,dim,n,func):
 
     #estimate volume
     for c in circumcircles:
-        effective_volume(c,population,dim)
+        effective_volume(c,population,dim,ub,lb)
         # print(c.volume)
 
     # choose the circumcircles using volumes of circumcircles
@@ -289,7 +288,7 @@ def average_fitness(population, index):
     fitness = [population[i].fitness for i in index]
     return np.mean(fitness)
 
-def exploitative_generation(population, dim, n,func):
+def exploitative_generation(population, dim, n,func,ub,lb):
     # Delaunay triangulation
     pop=[i.val for i in population]
     D = Delaunay(pop)
@@ -305,7 +304,7 @@ def exploitative_generation(population, dim, n,func):
     #estimate volume
     total_volume = 0
     for c in circumcircles:
-        effective_volume(c,population,dim)
+        effective_volume(c,population,dim,ub,lb)
         # print(c.volume)
         total_volume = total_volume + c.volume
 
@@ -350,19 +349,19 @@ def circumcenter(S,d):
 def circumradius(S,center):
     return np.sum(((S-center)**2))**.5
 
-def generate_DT(s, dim, n, func):
+def generate_DT(s, dim, n, func,ub,lb):
     alpha = 0.5
     per = 1 - (shared.i / shared.MaxFes)**alpha # TODO: anychanges to function?
     R = np.random.uniform()
 
     if R < per: 
-        return explorative_generation(s, dim, n, func) # Exploration
+        return explorative_generation(s, dim, n, func,ub,lb) # Exploration
     else:
-        return exploitative_generation(s, dim, n, func) # Exploitation
+        return exploitative_generation(s, dim, n, func,ub,lb) # Exploitation
 
 
 
-def solve(f, lb, ub, dim, temp=-1, num_clusters=-1, T=20, M_factor=0, gen_mult=1.5, generate_strategy=generate_old):  # ,pop_hint=-1
+def solve(f, lb, ub, dim, temp=-1, num_clusters=-1, T=20, M_factor=0, gen_mult=1, generate_strategy=generate_old):  # ,pop_hint=-1
     CR = 0.9  # MAGIC
     MaxGens = (200 if dim < 5 else 300)*gen_mult
 
@@ -427,10 +426,10 @@ def solve(f, lb, ub, dim, temp=-1, num_clusters=-1, T=20, M_factor=0, gen_mult=1
                     else:
                         #ws = generate_strategy(s, n-len(s))
                         #print(n-len(s))
-                        ws = generate_DT(population,dim,n-len(s),f)
-                        for i in ws:
-                            print(i.val)
-                            print(i.fitness)
+                        ws = generate_DT(population,dim,n-len(s),f,ub,lb)
+                        # for i in ws:
+                        #     print(i.val)
+                        #     print(i.fitness)
                         genz.extend(ws)
                 
                         break
@@ -474,6 +473,7 @@ def solve(f, lb, ub, dim, temp=-1, num_clusters=-1, T=20, M_factor=0, gen_mult=1
         # return np.array([i.val for i in population])
 
         # print("gens:", g)
+        print('here')
         return np.array([i.val for i in chain(population, bestworse)])
 
 
@@ -530,6 +530,7 @@ def tester(solver, file_name):
         print("Test run no.:",n+1,"started")
         shared.i = 0
         pop = solver()
+        print(pop)
         accuracy = [0.1, 0.01, 0.001, 0.0001, 0.00001]
 
         print("-"*20)
@@ -569,12 +570,11 @@ def tester(solver, file_name):
 
 if __name__ == "__main__":
 
-    test = False
+    test = True
 
     if test:
-
-        # k, gen_strat, temp, T, gen_mult, M_factor = eval(sys.argv[1])
-        k, phi_g, gen_strat, temp, T, M_factor = eval(sys.argv[1])
+        k, gen_strat, temp, T, gen_mult, M_factor = eval(sys.argv[1])
+        #k, phi_g, gen_strat, temp, T, M_factor = eval(sys.argv[1])
         gen_mult = 1
 
         # # range(4,8):
@@ -618,8 +618,8 @@ if __name__ == "__main__":
                 print("FAILED:", e, file=the_file)
 
     else:
-
-        k = 10
+        print("start")
+        k = 4
         f = CEC2013(k)
         print(f.get_info())
         dim = f.get_dimension()
@@ -630,7 +630,7 @@ if __name__ == "__main__":
         seed = 42
         np.random.seed(seed)
         # name = f"fbkde_{k}_{seed}" #TODO restore or find alternative
-        name = "fbkde_{" + str(k) + "}_{" + str(seed) + "}"
+        name = "dtde_{" + str(k) + "}_{" + str(seed) + "}"
 
         run = True
 
