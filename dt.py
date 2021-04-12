@@ -361,7 +361,7 @@ def generate_DT(s, dim, n, func,ub,lb):
 
 
 
-def solve(f, lb, ub, dim, temp=-1, num_clusters=-1, T=20, M_factor=0, gen_mult=1, generate_strategy=generate_old):  # ,pop_hint=-1
+def solve(f, lb, ub, dim, temp=-1, num_clusters=-1, T=20, M_factor=0, gen_mult=1):  # ,pop_hint=-1
     CR = 0.9  # MAGIC
     MaxGens = (200 if dim < 5 else 300)*gen_mult
 
@@ -573,7 +573,7 @@ if __name__ == "__main__":
     test = True
 
     if test:
-        k, gen_strat, temp, T, gen_mult, M_factor = eval(sys.argv[1])
+        k, temp, T, gen_mult, M_factor = eval(sys.argv[1])
         #k, phi_g, gen_strat, temp, T, M_factor = eval(sys.argv[1])
         gen_mult = 1
 
@@ -583,6 +583,7 @@ if __name__ == "__main__":
 
         # k = x
         f = CEC2013(k)
+        print(f.get_info())
         # print(k, test_temp, ':', f.get_info())
         # file_name = str(x)+'-'+str(test_temp)+'.txt'
         file_name = 'results/' + sys.argv[1]
@@ -594,23 +595,23 @@ if __name__ == "__main__":
         shared.MaxFes = f.get_maxfes()
         ub, lb = get_bounds(f)
 
-        if(gen_strat == 'old'):
-            generate_strategy = generate_old
-        elif (gen_strat == 'new'):
-            generate_strategy = generate
-        elif (gen_strat == 'm'):
-            generate_strategy = generate_MAB
-        elif (gen_strat == 'mr'):
-            generate_strategy = generate_MAB_rec
-        elif (gen_strat == 'mi'):
-            generate_strategy = generate_MAB_iter
-        elif (gen_strat == 'mir'):
-            generate_strategy = generate_MAB_iter_rec
+        # if(gen_strat == 'old'):
+        #     generate_strategy = generate_old
+        # elif (gen_strat == 'new'):
+        #     generate_strategy = generate
+        # elif (gen_strat == 'm'):
+        #     generate_strategy = generate_MAB
+        # elif (gen_strat == 'mr'):
+        #     generate_strategy = generate_MAB_rec
+        # elif (gen_strat == 'mi'):
+        #     generate_strategy = generate_MAB_iter
+        # elif (gen_strat == 'mir'):
+        #     generate_strategy = generate_MAB_iter_rec
 
         try:
             tester(lambda: solve(f, lb, ub, dim,
                                  temp=temp, T=T, M_factor=M_factor,
-                                 gen_mult=gen_mult, generate_strategy=generate_strategy), file_name)
+                                 gen_mult=gen_mult), file_name)
         except Exception as e:
             # print("FAILED:", e)
             with open(file_name, 'a') as the_file:
