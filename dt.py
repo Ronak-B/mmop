@@ -312,7 +312,10 @@ def exploitative_generation(population, dim, n,func,ub,lb):
     goodness_measure = []
     k = 1 # trade-off constant
     for c in circumcircles:
-        ucb = c.fitness + k * np.sqrt(2* np.log(c.volume/total_volume))
+        if np.log(c.volume/total_volume)<0:
+            ucb=c.fitness
+        else:
+            ucb = c.fitness + k * np.sqrt(2* np.log(c.volume/total_volume))
         goodness_measure.append(ucb)
 
     # choose the circumcircle using goodness measure
@@ -339,12 +342,22 @@ def exploitative_generation(population, dim, n,func,ub,lb):
     return new_points
 
 def circumcenter(S,d):
-    A=np.insert(S*2,d,1,axis=1)
-    Ainv=np.linalg.inv(A)
-    B=np.sum(np.square(S),axis=1)
-    x=np.dot(Ainv,B)
-    c=np.delete(x,d)
-    return c
+    try:
+        A=np.insert(S*2,d,1,axis=1)
+        Ainv=np.linalg.inv(A)
+        B=np.sum(np.square(S),axis=1)
+        x=np.dot(Ainv,B)
+        c=np.delete(x,d)
+        return c
+    except:
+        print('check')
+        return centroid(S)
+        
+def centroid(arr):
+    len=arr.shape[0]
+    cc=np.sum(arr,axis=0)
+    return cc/len
+
 
 def circumradius(S,center):
     return np.sum(((S-center)**2))**.5
@@ -427,9 +440,9 @@ def solve(f, lb, ub, dim, temp=-1, num_clusters=-1, T=20, M_factor=0, gen_mult=1
                         #ws = generate_strategy(s, n-len(s))
                         #print(n-len(s))
                         ws = generate_DT(population,dim,n-len(s),f,ub,lb)
-                        # for i in ws:
-                        #     print(i.val)
-                        #     print(i.fitness)
+                        for i in ws:
+                            print(i.val)
+                            print(i.fitness)
                         genz.extend(ws)
                 
                         break
@@ -570,7 +583,7 @@ def tester(solver, file_name):
 
 if __name__ == "__main__":
 
-    test = True
+    test = False
 
     if test:
         k, temp, T, gen_mult, M_factor = eval(sys.argv[1])
@@ -620,7 +633,7 @@ if __name__ == "__main__":
 
     else:
         print("start")
-        k = 4
+        k = 10
         f = CEC2013(k)
         print(f.get_info())
         dim = f.get_dimension()
